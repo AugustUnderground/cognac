@@ -33,23 +33,15 @@ local function sendRequest(payload)
     req:setopt_writefunction(table.insert, res)
     local ok,err   = req:perform()
     local partData = {}
-    res = json.decode(table.concat(res))
-    for _,data in pairs(res.PartsData) do
-        if data.PartNumber == part then
-            partData = data
+    local tbl = table.concat(res)
+    if tbl ~= '' then
+        res = json.decode(tbl)
+        for _,data in pairs(res.PartsData) do
+            if data.PartNumber == part then
+                partData = data
+            end
         end
     end
-    -- local ok,val   = pcall(json.decode(table.concat(res)))
-    -- if ok then
-    --     for _,data in pairs(val.PartsData) do
-    --         if data.PartNumber == part then
-    --             partData = data
-    --         end
-    --     end
-    -- else
-    --     print('Error occured: ' .. val)
-    --     partData = {}
-    -- end
     return partData
 end
 
