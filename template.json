@@ -1,0 +1,50 @@
+{
+  "searchType": 0,
+  "inductance": {
+    "lower": 15,
+    "upper": null,
+    "unit": 2
+  },
+  "voltTime": null,
+  "temperature": 25,
+  "current": {
+    "idcCurrent": 0.4,
+    "ipeakCurrent": 0.412,
+    "rippleCurrent": 0.024,
+    "rippleCurrentPercent": 6,
+    "unit": 8,
+    "currentType": "idc"
+  },
+  "frequency": {
+    "lower": 0.666,
+    "value": 0.666,
+    "unit": 11
+  },
+  "dcrMax": {
+    "value": 150000,
+    "unit": 4,
+    "defaultValue": true
+  },
+  "lengthMax": {
+    "value": 100,
+    "unit": 6,
+    "defaultValue": true
+  },
+  "heightMax": {
+    "value": 100,
+    "unit": 6,
+    "defaultValue": true
+  },
+  "mountingType": {
+    "SM": true,
+    "TH": true
+  },
+  "aecGrade": {
+    "grade1": true,
+    "grade2": true,
+    "grade3": true,
+    "notRated": true,
+    "unit": ""
+  },
+  "adjustRippleCurrent": true
+}
