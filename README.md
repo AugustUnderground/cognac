@@ -23,6 +23,6 @@ $ lua54 coil.lua
 
 `Lua` 5.4 and the following rocks:
 
-- `lunajson`
+- `lua-cjson`
 - `lua-curl`
 - `lanes`

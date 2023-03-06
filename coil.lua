@@ -2,7 +2,7 @@
 
 LANES = require 'lanes'
 LINDA = LANES.linda()
-JSON  = require 'lunajson'
+JSON  = require 'cjson'
 CURL  = require 'cURL'
 
 local adr     = 'https://www.coilcraft.com/api/power-inductor/parts'
@@ -23,7 +23,7 @@ _                    = io.close(templateHandle)
 
 local function sendRequest(payload)
     local curl  = require 'cURL'
-    local json  = require 'lunajson'
+    local json  = require 'cjson'
     local res = {}
     local req = curl.easy{ url        = adr
                          , post       = true
@@ -33,17 +33,23 @@ local function sendRequest(payload)
     req:setopt_writefunction(table.insert, res)
     local ok,err   = req:perform()
     local partData = {}
-    print(err)
-    if not err then
-        res = json.decode(table.concat(res))
-        for _,data in pairs(res.PartsData) do
-            if data.PartNumber == part then
-                partData = data
-            end
+    res = json.decode(table.concat(res))
+    for _,data in pairs(res.PartsData) do
+        if data.PartNumber == part then
+            partData = data
         end
-    else
-        print(err)
     end
+    -- local ok,val   = pcall(json.decode(table.concat(res)))
+    -- if ok then
+    --     for _,data in pairs(val.PartsData) do
+    --         if data.PartNumber == part then
+    --             partData = data
+    --         end
+    --     end
+    -- else
+    --     print('Error occured: ' .. val)
+    --     partData = {}
+    -- end
     return partData
 end
 
