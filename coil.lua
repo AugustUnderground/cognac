@@ -1,12 +1,14 @@
 #!/usr/bin/env lua54
 
-LANES = require 'lanes'
-LINDA = LANES.linda()
+-- LANES = require 'lanes'
+-- LINDA = LANES.linda()
 JSON  = require 'cjson'
 CURL  = require 'cURL'
+SOCK  = require 'socket'
 
 local adr     = 'https://www.coilcraft.com/api/power-inductor/parts'
 local part    = 'SER2918H-153' -- 'PA6331' 'AGP4233-153'
+local csvPath = './' .. part .. '.csv'
 
 local outputs = { 'NominalInductance', 'L', 'InductanceAtIpeak', 'Isat', 'IRMS40C'
                 , 'SRFMHz', 'ACLoss', 'DCLoss', 'LossAE', 'LossN', 'LossRFac'
@@ -22,39 +24,39 @@ local template       = JSON.decode(templateHandle:read('*all'))
 _                    = io.close(templateHandle)
 
 local function sendRequest(payload)
-    local curl  = require 'cURL'
-    local json  = require 'cjson'
-    local res = {}
-    local req = curl.easy{ url        = adr
-                         , post       = true
-                         , httpheader = { "Content-Type: application/json"; }
-                         ; postfields = json.encode(payload);
-                         }
+    local res  = {}
+    local req  = CURL.easy{ url        = adr
+                          , post       = true
+                          , httpheader = { "Content-Type: application/json"; }
+                          , postfields = JSON.encode(payload)
+                          , timeout    = 666
+                          }
     req:setopt_writefunction(table.insert, res)
-    local ok,err   = req:perform()
-    local partData = {}
-    local tbl = table.concat(res)
-    if tbl ~= '' then
-        res = json.decode(tbl)
-        for _,data in pairs(res.PartsData) do
-            if data.PartNumber == part then
-                partData = data
-            end
-        end
+    local ok,err = req:perform()
+    local success, partData = pcall(JSON.decode, table.concat(res, ''));
+    if not success then
+        print('Rate limited, sleeping for 30s ... ')
+        print('\t' .. table.concat(res, ''))
+        SOCK.sleep(30.0)
+        partData = sendRequest(payload)
     end
     return partData
 end
 
-local function toCsv(data)
+local function toCsv(res)
     local line = ''
-    for _,output in pairs(outputs) do
-        line = line .. ',' .. data[output]
+    local partsData = res['PartsData']
+    for _,data in pairs(partsData) do
+        if data.PartNumber == part then
+            for _,output in pairs(outputs) do
+                line = line .. ',' .. (data[output] or '')
+            end
+        end
     end
     return line
 end
 
-function sendRequestParallel(tmp, frq, idc)
-    print('Sending ' .. tmp .. ',' .. frq .. ',' .. idc)
+local function sendRequestParallel(tmp, frq, idc)
     local ric = 0.5
     local rip = 100 * ric / idc
     -- local ric = idc * rip / 100;
@@ -69,9 +71,9 @@ function sendRequestParallel(tmp, frq, idc)
     local xs      = tmp .. ',' .. frq .. ',' .. idc .. ',' .. rip .. ',' .. ric .. ',' .. rpc
     local res     = sendRequest(template)
     local csvLine = ''
-    if next(res) ~= nil then
+    if res then
         local ys  = toCsv(res)
-        csvLine   = xs .. ys .. '\n'
+        csvLine   = xs .. ys
     end
     return csvLine
 end
@@ -79,26 +81,23 @@ end
 local lines    = {}
 local tmpRange = {-40, -20, 0, 25, 27, 50, 85}
 
-for _,tmp in pairs(tmpRange) do
+for i,tmp in pairs(tmpRange) do
+    print('Temperature ' .. i .. ': ' .. tmp)
     for frqIdx = 1,10 do
         local frq = frqIdx / 10
         for idc = 5,10 do
             -- for rip = 1,10 do
-                local genLine = LANES.gen('*', sendRequestParallel)
-                local csvLine = genLine(tmp,frq,idc)
+                local csvLine = sendRequestParallel(tmp, frq, idc)
                 table.insert(lines, csvLine)
             -- end
         end
     end
 end
 
-local csvString = ''
-for _,line in pairs(lines) do
-    csvString = csvString .. line[1]
-end
+local csvString = table.concat(lines, '\n')
 
 local csvData   = table.concat(inputs, ',') .. table.concat(outputs, ',')
                     .. '\n' .. csvString
-local csvHandle = io.open('./loss.csv', 'w')
+local csvHandle = io.open(csvPath, 'w')
 _               = csvHandle:write(csvData)
 _               = io.close(csvHandle)
