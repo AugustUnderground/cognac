@@ -13,7 +13,7 @@ Get operating point data for coils from the
 1. Profit
 
 ```lua
-local part = 'XXX'
+local part = 'SER2918H-153' -- for example
 ```
 
 ```shell
