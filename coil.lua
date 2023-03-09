@@ -32,11 +32,11 @@ local function sendRequest(payload)
                           , timeout    = 666
                           }
     req:setopt_writefunction(table.insert, res)
-    local ok,err = req:perform()
-    local success, partData = pcall(JSON.decode, table.concat(res, ''));
+    local ok,_ = req:perform()
+    local resp = table.concat(res, '')
+    local success, partData = pcall(JSON.decode, resp);
     if not success then
-        print('Rate limited, sleeping for 30s ... ')
-        print('\t' .. table.concat(res, ''))
+        print(resp .. ' ... sleeping for 30s')
         SOCK.sleep(30.0)
         partData = sendRequest(payload)
     end
@@ -79,10 +79,9 @@ local function sendRequestParallel(tmp, frq, idc)
 end
 
 local lines    = {}
-local tmpRange = {-40, -20, 0, 25, 27, 50, 85}
+local tmpRange = {27, 50, 85}
 
 for i,tmp in pairs(tmpRange) do
-    print('Temperature ' .. i .. ': ' .. tmp)
     for frqIdx = 1,10 do
         local frq = frqIdx / 10
         for idc = 5,10 do
